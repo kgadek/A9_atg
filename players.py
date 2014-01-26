@@ -116,25 +116,6 @@ def probability(requirement, mydices, trials=1000):
     return float(ok) / trials
 
 
-def float_eq(x, y, eps=0.05):
-    print "float_equal:", x, "~=", y
-    return -eps < abs(x-y) < eps
-print "\n\n\n======\n======\n\n\n"
-assert probability([2,2,3,4,5], [1,3,6]) == 0.0
-assert probability([2,2,3,4,5], [1,3,5]) == 0.0
-assert probability([2,2,3,4,5], [2,3,5]) > 0.0
-assert probability([2,2,3,4,5], [2,2,3,4,5]) == 1.0
-assert float_eq(probability([4,6], [6]), 0.5)
-assert float_eq(probability([4,6,6,6], [6,6,6]), 0.5)
-assert float_eq(probability([1,6], [6]), 1.0)
-assert float_eq(probability([1,1], [6]), 1.0)
-assert float_eq(probability([6,6], [6]), 1./6)
-assert float_eq(probability([5,6], [6]), 2./6)
-assert float_eq(probability([6,6,6], [6]), 1./36)
-assert probability([2,2,3,4,6], [1,3,6]) == 0.0
-print "time =", time.time()
-
-
 def cmp(xs, ys):
     for x, y in zip(xs, ys):
         if x < y:
@@ -143,12 +124,6 @@ def cmp(xs, ys):
             return 1
     return 0
 
-assert cmp([1], [1]) == 0
-assert cmp([2], [1]) == 1
-assert cmp([1], [2]) == -1
-assert cmp([1,3], [1,3]) == 0
-assert cmp([1,3], [2,3]) == -1
-assert cmp([1,1,3], [1,2,3]) == -1
 
 # noinspection PyMethodMayBeStatic,PyPep8Naming
 class Player:
@@ -220,35 +195,5 @@ class Player:
         przykladu powyzej parametr dices mialby wartosc ["34","1","6","22"])
         """
         self.numofdices += 1
-
-
-a = Player()
-a.setName(1)
-a.numofdices = 6
-a.start([3, 4])
-
-b = Player()
-b.setName(2)
-b.numofdices = 6
-b.start([1])
-
-c = Player()
-c.setName(3)
-c.numofdices = 6
-c.start([6])
-
-d = Player()
-d.setName(4)
-d.numofdices = 6
-d.start([2, 2])
-
-print "_____\n\n\n"
-history = []
-for player in itertools.cycle([a, b, c, d]):
-    print "ROUND"
-    history = [[player.id, player.play(history)]] + history
-    print "MOVE", player.id, ">>", history[0][1]
-    if history[0][1] == "CHECK":
-        break
 
 
