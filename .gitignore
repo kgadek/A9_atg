@@ -1,2 +1,7 @@
 .idea
 *.pyc
+results*.zip
+log*
+res*
+*.py
+!gadek.py
