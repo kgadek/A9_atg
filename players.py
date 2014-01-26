@@ -21,6 +21,7 @@ Gracz 1 zglasza "111266" (poprawne zgloszenie, ktore nie jest dobre)
 Gracz 2 zglasza "112266" (poprawne zgloszenie, ktore nie jest dobre)
 Gracz 3 sprawdza: Gracz 2 przegrywa runde a gracz 3 wygrywa
 """
+import functools
 import operator
 import itertools
 import random
@@ -125,6 +126,25 @@ def cmp(xs, ys):
     return 0
 
 
+def is_possible_such_move(prev, prop):
+    return all(x <= y for x, y in zip(prev, prop)) and any(x < y for x, y in zip(prev, prop))
+
+
+def showreturn(f):
+    @functools.wraps(f)
+    def wrapper(*args, **kwargs):
+        res = f(*args, **kwargs)
+        print "<<<<<  ", res
+        return res
+    return wrapper
+
+
+# print time.time()
+# def tmp(sx, sy): return is_possible_such_move(str_to_list(sx), str_to_list(sy))
+assert not is_possible_such_move([1,1,1,6], [1,1,1,1])
+assert is_possible_such_move([1,1,1,1], [1,1,1,6])
+assert not is_possible_such_move([1,1,1,5], [1,1,1,5])
+
 # noinspection PyMethodMayBeStatic,PyPep8Naming
 class Player:
     def __init__(self):
@@ -144,6 +164,7 @@ class Player:
         """
         self.mydices = dice
 
+    @showreturn
     def play(self, history):
         """
         metoda wywolywana w momencie, gdy nastepuje kolej gracza, zeby zagrac. Parametr history zawiera liste wszystkich
@@ -152,10 +173,12 @@ class Player:
         powinna zwrocic lancuch opisujacy zgloszenie gracza lub slowo "CHECK" zeby sprawdzic
         """
 
+        print ">>>>> PLAY #", self.id, " // imma got", self.mydices
         # SZCZERZE WIERZĘ, że nikt nie ma aż tak mądrego bota, by to skutecznie wykorzystać przeciwko mnie ;)
         allofmyhand = ([1]*(self.numofdices-len(self.mydices)) + self.mydices)
 
         if not history:
+            print "return from not history"
             return list_to_str(allofmyhand)
         [_, prevdecl] = history[0]
         prevdecl = str_to_list(prevdecl)
@@ -163,10 +186,13 @@ class Player:
 
         sigma = 0.15
         if prob < 0.5 - sigma:
+            print "return from probability A"
             return "CHECK"
         elif (prob < 0.5 + sigma) and (random.random() < ((prob - 0.5 - sigma) / (2 * sigma))):
+            print "return from probability B"
             return "CHECK"
-        elif cmp(prevdecl, allofmyhand) < 0:
+        elif is_possible_such_move(prevdecl, allofmyhand):
+            print "return from ALLOFMYHAND (got %s, will do %s, because %s)" % (prevdecl, allofmyhand, is_possible_such_move(prevdecl, allofmyhand))
             return list_to_str(allofmyhand)
         else:
             def props_generator():
@@ -174,20 +200,23 @@ class Player:
                     propdecl = prevdecl[:]
                     for i in range(6, 0, -1):
                         propdecl[digit] = i
-                        if cmp(propdecl, prevdecl) <= 0:
-                            # print "proposition: ", propdecl, "nope of 1"
-                            break
-                        else:
-                            propdecl_sorted = sorted(propdecl)
+                        propdecl_sorted = sorted(propdecl)
+                        if is_possible_such_move(prevdecl, propdecl_sorted):
                             prob = probability(propdecl_sorted, self.mydices)
-                            # print "proposition: ", propdecl, "maybe:", prob
+                            print "proposition: ", propdecl, "maybe:", prob, "in spite of:", prevdecl
                             yield propdecl_sorted
+                        else:
+                            print "proposition: ---- ", propdecl, "not possible in spite of:", prevdecl
 
-            picked = max(props_generator(), key=lambda x: probability(x, self.mydices))
+            try:
+                picked = max(props_generator(), key=lambda x: probability(x, self.mydices))
+            except ValueError:
+                return "CHECK"
+
             return list_to_str(picked)
 
 
-    def result(self, points, dices):
+    def result(self, points, dices, history):
         """
         funkcja wywolywana po zakonczeniu rundy; parametr points jest 4 elementowa lista, z iloscia punktow dla
         kolejnych graczy (0, 1, lub -1), parametr dices jest 4 elementowa lista zawierajaca napisy, opisujace kosci
@@ -197,3 +226,32 @@ class Player:
         self.numofdices += 1
 
 
+
+# a = Player()
+# a.setName(1)
+# a.numofdices = 6
+# a.start([3, 4])
+#
+# b = Player()
+# b.setName(2)
+# b.numofdices = 6
+# b.start([1])
+#
+# c = Player()
+# c.setName(3)
+# c.numofdices = 6
+# c.start([6])
+#
+# d = Player()
+# d.setName(4)
+# d.numofdices = 6
+# d.start([2, 2])
+#
+# print "_____\n\n\n"
+# history = []
+# for player in itertools.cycle([a, b, c, d]):
+#     print "ROUND"
+#     history = [[player.id, player.play(history)]] + history
+#     print "MOVE", player.id, ">>", history[0][1]
+#     if history[0][1] == "CHECK":
+#         break
