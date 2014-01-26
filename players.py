@@ -21,18 +21,67 @@ Gracz 1 zglasza "111266" (poprawne zgloszenie, ktore nie jest dobre)
 Gracz 2 zglasza "112266" (poprawne zgloszenie, ktore nie jest dobre)
 Gracz 3 sprawdza: Gracz 2 przegrywa runde a gracz 3 wygrywa
 """
+import operator
+import itertools
+
+
+def product(it):
+    """ Iloczyn iteratora. """
+    return reduce(operator.mul, it, 1)
+
+
+def binomial(n, k):
+    """ Dwumian Newtona. """
+    return product(xrange(n, n - k, -1)) / product(xrange(1, k + 1))
+
+
+def placements(n, it):
+    """ Ilość ustawień
+    """
+    res = 1
+    for k in it:
+        res *= binomial(n, k)
+        n -= k
+    return res
+
+
+def iterlen(it):
+    """
+    Długość iteratora.
+    """
+    return sum(1 for _ in it)
+
+
+def events_a(numbs):
+    """
+    Zwraca ilość możliwości wypadnięcia co najmniej podanych kości _w kolejności_.
+
+    Przestrzeń zdarzeń: 6 ** len(numbs).
+
+    Przykład: dla numbs=[2,5] oblicza ilość zdarzeń sprzyjających gdy K1 >= 2 oraz K2 >= 5.
+    """
+    numbs = list(numbs)
+    n = len(numbs)
+    good = 6 ** n
+    prev = 1
+
+    for pos, k in enumerate(numbs, start=1):
+        good -= prev * (k-1) * (6**(n-pos))
+        prev *= 7 - k
+    return good
+
 
 
 # noinspection PyMethodMayBeStatic,PyPep8Naming
 class Player:
     def __init__(self):
-        pass
+        self.id = None
 
     def setName(self, i):
         """
         metoda wywolywana na poczatku gry, jako parametr gracz otrzymuje swoj numer (1, 2, 3, lub 4)
         """
-        pass
+        self.id = i
 
     def start(self, dice):
         """
