@@ -134,12 +134,12 @@ def showreturn(f):
     @functools.wraps(f)
     def wrapper(*args, **kwargs):
         res = f(*args, **kwargs)
-        print "<<<<<  ", res
+        #print "<<<<<  ", res
         return res
     return wrapper
 
 
-# print time.time()
+# #print time.time()
 # def tmp(sx, sy): return is_possible_such_move(str_to_list(sx), str_to_list(sy))
 assert not is_possible_such_move([1,1,1,6], [1,1,1,1])
 assert is_possible_such_move([1,1,1,1], [1,1,1,6])
@@ -162,7 +162,7 @@ class Player:
         """
         metoda wywolywana na poczatku rundy; parametr dice to lista z wartosciami kosci gracza
         """
-        self.mydices = dice
+        self.mydices = [int(x) for x in dice]
 
     @showreturn
     def play(self, history):
@@ -173,26 +173,26 @@ class Player:
         powinna zwrocic lancuch opisujacy zgloszenie gracza lub slowo "CHECK" zeby sprawdzic
         """
 
-        print ">>>>> PLAY #", self.id, " // imma got", self.mydices
+        #print ">>>>> PLAY #", self.id, " // imma haz", self.mydices, " // history arg", history
         # SZCZERZE WIERZĘ, że nikt nie ma aż tak mądrego bota, by to skutecznie wykorzystać przeciwko mnie ;)
         allofmyhand = ([1]*(self.numofdices-len(self.mydices)) + self.mydices)
 
         if not history:
-            print "return from not history"
+            #print "return from not history"
             return list_to_str(allofmyhand)
         [_, prevdecl] = history[0]
         prevdecl = str_to_list(prevdecl)
         prob = probability(prevdecl, self.mydices)
 
-        sigma = 0.15
+        sigma = 0.3
         if prob < 0.5 - sigma:
-            print "return from probability A"
+            #print "return from probability A"
             return "CHECK"
         elif (prob < 0.5 + sigma) and (random.random() < ((prob - 0.5 - sigma) / (2 * sigma))):
-            print "return from probability B"
+            #print "return from probability B"
             return "CHECK"
         elif is_possible_such_move(prevdecl, allofmyhand):
-            print "return from ALLOFMYHAND (got %s, will do %s, because %s)" % (prevdecl, allofmyhand, is_possible_such_move(prevdecl, allofmyhand))
+            #print "return from ALLOFMYHAND (got %s, will do %s, because %s)" % (prevdecl, allofmyhand, is_possible_such_move(prevdecl, allofmyhand))
             return list_to_str(allofmyhand)
         else:
             def props_generator():
@@ -203,10 +203,10 @@ class Player:
                         propdecl_sorted = sorted(propdecl)
                         if is_possible_such_move(prevdecl, propdecl_sorted):
                             prob = probability(propdecl_sorted, self.mydices)
-                            print "proposition: ", propdecl, "maybe:", prob, "in spite of:", prevdecl
+                            #print "proposition: ", propdecl, "maybe:", prob, "in spite of:", prevdecl
                             yield propdecl_sorted
-                        else:
-                            print "proposition: ---- ", propdecl, "not possible in spite of:", prevdecl
+                        # else:
+                            #print "proposition: ---- ", propdecl, "not possible in spite of:", prevdecl
 
             try:
                 picked = max(props_generator(), key=lambda x: probability(x, self.mydices))
@@ -247,11 +247,11 @@ class Player:
 # d.numofdices = 6
 # d.start([2, 2])
 #
-# print "_____\n\n\n"
+# #print "_____\n\n\n"
 # history = []
 # for player in itertools.cycle([a, b, c, d]):
-#     print "ROUND"
+#     #print "ROUND"
 #     history = [[player.id, player.play(history)]] + history
-#     print "MOVE", player.id, ">>", history[0][1]
+#     #print "MOVE", player.id, ">>", history[0][1]
 #     if history[0][1] == "CHECK":
 #         break
