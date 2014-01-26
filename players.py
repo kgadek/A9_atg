@@ -23,6 +23,16 @@ Gracz 3 sprawdza: Gracz 2 przegrywa runde a gracz 3 wygrywa
 """
 import operator
 import itertools
+import random
+import time
+
+
+def str_to_list(s):
+    return [int(x) for x in s]
+
+
+def list_to_str(xs):
+    return ''.join(str(x) for x in xs)
 
 
 def product(it):
@@ -71,11 +81,81 @@ def events_a(numbs):
     return good
 
 
+def is_result_ok(results, requirements):
+    """ Czy zgłoszenie jest dobre dla danego wyniku rzutu. """
+    results = sorted(results)  # sort + shallow copy
+    for res, req in zip(results, requirements):
+        if res < req:
+            return False
+    return True
+
+
+def probability(requirement, mydices, trials=1000):
+    requirement, mydices = list(requirement), list(mydices)
+
+    posreq = 0
+    try:
+        for mydice in reversed(mydices):
+            while True:
+                posreq -= 1
+                if requirement[posreq] <= mydice:
+                    break
+            requirement[posreq] = 0
+    except IndexError:
+        return 0.0
+
+    requirement = [req for req in requirement if req >= 2]
+    if not requirement:
+        return 1.0
+
+    num_dices = len(requirement)
+    ok = 0
+    for _ in range(trials):
+        ok += is_result_ok((random.randint(1, 6) for _ in range(num_dices)),
+                           requirement)
+    return float(ok) / trials
+
+
+def float_eq(x, y, eps=0.05):
+    print "float_equal:", x, "~=", y
+    return -eps < abs(x-y) < eps
+print "\n\n\n======\n======\n\n\n"
+assert probability([2,2,3,4,5], [1,3,6]) == 0.0
+assert probability([2,2,3,4,5], [1,3,5]) == 0.0
+assert probability([2,2,3,4,5], [2,3,5]) > 0.0
+assert probability([2,2,3,4,5], [2,2,3,4,5]) == 1.0
+assert float_eq(probability([4,6], [6]), 0.5)
+assert float_eq(probability([4,6,6,6], [6,6,6]), 0.5)
+assert float_eq(probability([1,6], [6]), 1.0)
+assert float_eq(probability([1,1], [6]), 1.0)
+assert float_eq(probability([6,6], [6]), 1./6)
+assert float_eq(probability([5,6], [6]), 2./6)
+assert float_eq(probability([6,6,6], [6]), 1./36)
+assert probability([2,2,3,4,6], [1,3,6]) == 0.0
+print "time =", time.time()
+
+
+def cmp(xs, ys):
+    for x, y in zip(xs, ys):
+        if x < y:
+            return -1
+        if x > y:
+            return 1
+    return 0
+
+assert cmp([1], [1]) == 0
+assert cmp([2], [1]) == 1
+assert cmp([1], [2]) == -1
+assert cmp([1,3], [1,3]) == 0
+assert cmp([1,3], [2,3]) == -1
+assert cmp([1,1,3], [1,2,3]) == -1
 
 # noinspection PyMethodMayBeStatic,PyPep8Naming
 class Player:
     def __init__(self):
         self.id = None
+        self.mydices = []
+        self.numofdices = 4
 
     def setName(self, i):
         """
@@ -87,7 +167,7 @@ class Player:
         """
         metoda wywolywana na poczatku rundy; parametr dice to lista z wartosciami kosci gracza
         """
-        pass
+        self.mydices = dice
 
     def play(self, history):
         """
@@ -96,7 +176,41 @@ class Player:
         czyli dla gracza 4 w powyzszym przykladzie wygladalaby tak: [[3,"111126"],[2,"111112"],[1,"111111"]]). Funkcja
         powinna zwrocic lancuch opisujacy zgloszenie gracza lub slowo "CHECK" zeby sprawdzic
         """
-        pass
+
+        # SZCZERZE WIERZĘ, że nikt nie ma aż tak mądrego bota, by to skutecznie wykorzystać przeciwko mnie ;)
+        allofmyhand = ([1]*(self.numofdices-len(self.mydices)) + self.mydices)
+
+        if not history:
+            return list_to_str(allofmyhand)
+        [_, prevdecl] = history[0]
+        prevdecl = str_to_list(prevdecl)
+        prob = probability(prevdecl, self.mydices)
+
+        sigma = 0.15
+        if prob < 0.5 - sigma:
+            return "CHECK"
+        elif (prob < 0.5 + sigma) and (random.random() < ((prob - 0.5 - sigma) / (2 * sigma))):
+            return "CHECK"
+        elif cmp(prevdecl, allofmyhand) < 0:
+            return list_to_str(allofmyhand)
+        else:
+            def props_generator():
+                for digit in range(len(prevdecl)):
+                    propdecl = prevdecl[:]
+                    for i in range(6, 0, -1):
+                        propdecl[digit] = i
+                        if cmp(propdecl, prevdecl) <= 0:
+                            # print "proposition: ", propdecl, "nope of 1"
+                            break
+                        else:
+                            propdecl_sorted = sorted(propdecl)
+                            prob = probability(propdecl_sorted, self.mydices)
+                            # print "proposition: ", propdecl, "maybe:", prob
+                            yield propdecl_sorted
+
+            picked = max(props_generator(), key=lambda x: probability(x, self.mydices))
+            return list_to_str(picked)
+
 
     def result(self, points, dices):
         """
@@ -105,4 +219,36 @@ class Player:
         kolejnych graczy (od 1 do 4, kazdy napis jest posortowany w kolejnosci niemalejacej kosci; po rundzie 3 z
         przykladu powyzej parametr dices mialby wartosc ["34","1","6","22"])
         """
-        pass
+        self.numofdices += 1
+
+
+a = Player()
+a.setName(1)
+a.numofdices = 6
+a.start([3, 4])
+
+b = Player()
+b.setName(2)
+b.numofdices = 6
+b.start([1])
+
+c = Player()
+c.setName(3)
+c.numofdices = 6
+c.start([6])
+
+d = Player()
+d.setName(4)
+d.numofdices = 6
+d.start([2, 2])
+
+print "_____\n\n\n"
+history = []
+for player in itertools.cycle([a, b, c, d]):
+    print "ROUND"
+    history = [[player.id, player.play(history)]] + history
+    print "MOVE", player.id, ">>", history[0][1]
+    if history[0][1] == "CHECK":
+        break
+
+
